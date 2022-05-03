@@ -2,39 +2,31 @@ package src.client;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+
+import javax.swing.InputMap;
 
 public class ClientStub {
 
     private Socket client_socket;
-    private ObjectInputStream in;
-    private ObjectOutputStream out;
     private Com com;
 
     public ClientStub(String ip_port) {
 
         connectServer(ip_port);
 
-        // Create reading and writing streams
-        this.in = null;
-        this.out = null;
-
-        try {
-            this.in = new ObjectInputStream(client_socket.getInputStream());
-            this.out = new ObjectOutputStream(client_socket.getOutputStream());
-        } catch (IOException e) {
-            System.err.println(e.getMessage());
-            System.exit(-1);
-        }
-
-        this.com = new Com(this.client_socket, this.in, this.out);
+        com = new Com(client_socket);
 
         // Directory where received photos will be stored.
         File wall = new File ("wall");
         // In case this directory is not created yet, create it.
-        if (wall.isDirectory()) {
+        if (!wall.isDirectory()) {
             try {
                 wall.mkdir();
             } catch (Exception e) {
@@ -43,6 +35,8 @@ public class ClientStub {
                 System.exit(-1);
             }
         }
+
+
     }
 
     /**
@@ -87,8 +81,8 @@ public class ClientStub {
     public void login(String client_id, String password) {
         // Send credentials to server.
         try {
-            this.out.writeObject(client_id);
-            this.out.writeObject(password);
+            com.send(client_id);
+            com.send(password);
         } catch (IOException e) {
             System.err.println(e.getMessage());
             System.err.println("Error while sending credentials to server");
@@ -99,25 +93,35 @@ public class ClientStub {
 
         // Receive answer from server about login.
         int server_answer = 0;
-        try {
-            server_answer = (int) this.in.readObject();
-        } catch (ClassNotFoundException | IOException e) {
-            e.printStackTrace();
-            System.err.println("Error while receiving login result from server");
-            System.exit(-1);
-        }
+        server_answer = (int) com.receive();
 
         switch (server_answer) {
             case 0:
-            // Successful login
+            // Successful login.
                 System.out.println("...Login successful...");
                 break;
             case 1:
-            // New Client was created with given credentials
-                System.out.println("...Client created with success");
+            // Give server the nickname.
+                System.out.println("...To finish signing up, please provide a nickname:");
+                System.out.print(">>>");
+                String nickname = null;
+                try {
+                    // BUG: if scanner is closed, socket is closed and EOF is thrown
+                    // on server side.
+                    Scanner sc = new Scanner(System.in);
+                    nickname = sc.nextLine();
+                    while (nickname.contains(":") || nickname.contains(" ")) {
+                        System.out.println("Nickname cannot contain ':' or ' '\nPlease provide a new nickname:");
+                        nickname = sc.nextLine(); 
+                    } 
+                    // Send to server.
+                    com.send(nickname);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
                 break;
             case -1:
-            // Invalid password
+            // Invalid password.
                 System.out.println("...Invalid password...\n...closing application...");
                 break;
             default:
@@ -135,12 +139,12 @@ public class ClientStub {
         int result = -1;
         try {
             // Send operation type.
-            this.out.writeObject("f");
+            com.send("f");
             // Send follow info
-            this.out.writeObject(user_id + ":" + sender_id);
+            com.send(user_id + ":" + sender_id);
             // Receive answer from server
-            result = (int) this.in.readObject();
-        } catch (IOException | ClassNotFoundException e) {
+            result = (int) com.receive();
+        } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Error while trying to conclude follow operation");
         }
@@ -152,16 +156,19 @@ public class ClientStub {
      * Registers that sender_id unfollowed user_id
      * @param user_id
      * @param sender_id
-     * @return
+     * @return 0 if successfuly unfollowed.
+     *         1 if user does not exist.
+     *         2 if user is not yet followed.
+     *         -1 error during operation.
      */
     public int unfollow(String user_id, String sender_id) {
         int result = -1;
 
         try {
-            this.out.writeObject("u");
-            this.out.writeObject(user_id + ":" + sender_id);
-            result = (int) this.in.readObject();
-        } catch (IOException | ClassNotFoundException e) {
+            com.send("u");
+            com.send(user_id + ":" + sender_id);
+            result = (int) com.receive();
+        } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Error while trying to conclude unfollow operation");
         }
@@ -174,18 +181,17 @@ public class ClientStub {
      * @param sender_id
      * @return
      */
-    public String viewFollowers(String sender_id) {
-        String followers = null;
+    public List<String> viewFollowers(String sender_id) {
+        List<String> followers = null;
 
         try {
-            this.out.writeObject("v");
-            this.out.writeObject(sender_id);
-            followers = (String) this.in.readObject();
-        } catch (IOException | ClassNotFoundException e) {
+            com.send("v");
+            com.send(sender_id);
+            followers = (List<String>) com.receive();
+        } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Error while trying to conclude view followers operation");
         }
-
         return followers;
     }
 
@@ -199,10 +205,10 @@ public class ClientStub {
         int result = -1;
 
         try {
-            this.out.writeObject("n");
-            this.out.writeObject(group_id + ":" + sender_id);
-            result = (int) this.in.readObject();
-        } catch (IOException | ClassNotFoundException e) {
+            com.send("n");
+            com.send(group_id + ":" + sender_id);
+            result = (int) com.receive();
+        } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Error while trying to conclude new group operation");
         }
@@ -221,10 +227,10 @@ public class ClientStub {
         int result = -1;
 
         try {
-            this.out.writeObject("a");
-            this.out.writeObject(user_id + ":" + group_id + ":" + group_owner_id);
-            result = (int) this.in.readObject();
-        } catch (IOException | ClassNotFoundException e) {
+            com.send("a");
+            com.send(user_id + ":" + group_id + ":" + group_owner_id);
+            result = (int) com.receive();
+        } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Error while trying to conclude addu operation");
         }
@@ -243,10 +249,10 @@ public class ClientStub {
         int result = -1;
 
         try {
-            this.out.writeObject("r");
-            this.out.writeObject(user_id + ":" + group_id + ":" + group_owner_id);
-            result = (int) this.in.readObject();
-        } catch (IOException | ClassNotFoundException e) {
+            com.send("r");
+            com.send(user_id + ":" + group_id + ":" + group_owner_id);
+            result = (int) com.receive();
+        } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Error while trying to conclude removeu operation");
         }
@@ -258,11 +264,11 @@ public class ClientStub {
         int result = -1;
 
         try {
-            this.out.writeObject("m");
-            this.out.writeObject(group_id + ":" + user_id);
-            this.out.writeObject(message);
-            result = (int) this.in.readObject();
-        } catch (IOException | ClassNotFoundException e) {
+            com.send("m");
+            com.send(group_id + ":" + user_id);
+            com.send(message);
+            result = (int) com.receive();
+        } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Error while trying to conclude message operation");
         }
@@ -281,10 +287,10 @@ public class ClientStub {
         int result = -1;
 
         try {
-            this.out.writeObject("ch");
-            this.out.writeObject(group_id + ":" + user_id);
-            result = (int) this.in.readObject();
-        } catch (IOException | ClassNotFoundException e) {
+            com.send("ch");
+            com.send(group_id + ":" + user_id);
+            result = (int) com.receive();
+        } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Error while trying to conclude can collect history operation");
         }
@@ -303,10 +309,10 @@ public class ClientStub {
         String[] messages = null;
 
         try {
-            this.out.writeObject("c");
-            this.out.writeObject(group_id + ":" + user_id);
-            messages = (String[]) this.in.readObject();
-        } catch (IOException | ClassNotFoundException e) {
+            com.send("c");
+            com.send(group_id + ":" + user_id);
+            messages = (String[]) com.receive();
+        } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Error while trying to conclude collect operation");
         }
@@ -325,10 +331,10 @@ public class ClientStub {
     public String[] history(String group_id, String user_id) {
         String[] messages = null;
         try {
-            this.out.writeObject("h");
-            this.out.writeObject(group_id + ":" + user_id);
-            messages = (String[]) this.in.readObject();
-        } catch (IOException | ClassNotFoundException e) {
+            com.send("h");
+            com.send(group_id + ":" + user_id);
+            messages = (String[]) com.receive();
+        } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Error while trying to conclude history operation");
         }
@@ -346,15 +352,15 @@ public class ClientStub {
         String groups;
         String[] result = null;
         try {
-            this.out.writeObject("g");
-            this.out.writeObject(user_id);
+            com.send("g");
+            com.send(user_id);
             // warn the server that there is only one argument.
-            this.out.writeObject("/");
-            groups = (String) this.in.readObject();
+            com.send("/");
+            groups = (String) com.receive();
             if (groups.equals(""))
                 return new String[0];
             result = groups.split(",");
-        } catch (IOException | ClassNotFoundException e) {
+        } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Error while trying to conclude ginfo operation");
         }
@@ -375,14 +381,14 @@ public class ClientStub {
         String info;
         String[] result = null;
         try {
-            this.out.writeObject("g");
-            this.out.writeObject(user_id);
-            this.out.writeObject(group_id);
-            info = (String) this.in.readObject();
+            com.send("g");
+            com.send(user_id);
+            com.send(group_id);
+            info = (String) com.receive();
             if (info.equals(""))
                return new String[0]; 
             result = info.split(",");
-        } catch (IOException | ClassNotFoundException e) {
+        } catch (IOException e) {
             e.printStackTrace();
             System.err.println("Error while trying to conclude ginfo operation");
         }
@@ -398,9 +404,10 @@ public class ClientStub {
      */
     public boolean post(String file_path) {
         boolean result = false;
+        System.out.println(file_path);
         try {
             this.com.send("p");
-            this.com.sendFile("photos/" + file_path);
+            this.com.sendFile("Photos/" + file_path);
             result = (boolean) this.com.receive();
         } catch (IOException e) {
             e.printStackTrace();
@@ -417,28 +424,29 @@ public class ClientStub {
      * @return List containing the identifier to each
      * photo as well as the number of likes on each.
      */
-    public String[] wall(String n, String user_id) {
-        String[] result = null;
+    public List<String> wall(String n, String user_id) {
+        List<String> result = new ArrayList<>();
         int size = 0;
         try {
-            this.out.writeObject("w");
-            this.out.writeObject(user_id);
-            this.out.writeObject(n);
+            com.send("w");
+            com.send(user_id);
+            com.send(Integer.valueOf(n));
 
-            size = (int) this.in.readObject();
+            size = (int) com.receive();
 
             if(size == -1) {
-                result = new String[1];
-                result[0] = (String) this.in.readObject();
+                result.add((String) com.receive());
             } else {
-                // Each picture will be represented by two entries
+                // Each picture will be represented by three entries
                 // in the array:
                 // 1. photo_id
-                // 2. likes
-                result = new String[size*2];
-                for(int i = 0; i < result.length; i+=2) {
-                    result[i] = (String) this.in.readObject();
-                    result[i+1] = (String) this.in.readObject();
+                // 2. owner
+                // 3. likes
+                for(int i = 0; i < size; i++) {
+                    String photo_id = (String) com.receive();
+                    String owner_id = (String) com.receive();
+                    String likes = (String) com.receive(); 
+                    result.add(photo_id + " - " + owner_id + " - likes:" + likes);
                     // Receive photo file
                     this.com.receiveFileWall();
                 }
@@ -459,13 +467,12 @@ public class ClientStub {
     public int like(String photo_id) {
         int result = -1;
         try {
-            this.out.writeObject("l");
-            this.out.writeObject(photo_id);
-            result = (int) this.in.readObject();
-        } catch (IOException | ClassNotFoundException e) {
+            com.send("l");
+            com.send(photo_id);
+        } catch (IOException e) {
             e.printStackTrace();
-            System.err.println("Error while trying to conclude view followers operation");
         }
+        result = (int) com.receive();
         return result;
     }
     
@@ -477,7 +484,7 @@ public class ClientStub {
 	public void stopClient() {
 
 		try {
-			out.writeObject("s");
+			com.send("s");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

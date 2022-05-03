@@ -4,17 +4,14 @@ import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.text.Format;
 import java.util.Scanner;
 
-import javax.xml.catalog.CatalogException;
 
 /**
  * Deals with all communication matter
@@ -23,14 +20,7 @@ public class Com {
     
     private ObjectInputStream in = null;
     private ObjectOutputStream out = null;
-    private BufferedOutputStream bos = null;
-    private String user;
-    private String password;
     private Socket socket;
-
-    public Com(Socket socket) {
-        this.socket = socket;
-    }
 
     public Com(Socket socket, ObjectInputStream in, ObjectOutputStream out) {
         this.socket = socket;
@@ -43,8 +33,8 @@ public class Com {
      */
     public void open() {
         try {
-            this.in = new ObjectInputStream(this.socket.getInputStream());
             this.out = new ObjectOutputStream(this.socket.getOutputStream());
+            this.in = new ObjectInputStream(this.socket.getInputStream());
         } catch (IOException e) {
             System.err.println("Error initializing streams");
             e.printStackTrace();
@@ -75,8 +65,7 @@ public class Com {
         try{
             obj = in.readObject();
         } catch (ClassNotFoundException | IOException e) {
-			System.err.println("Error receiving object");
-			System.err.println(e.getMessage());
+            e.printStackTrace();
         }
         return obj;
     }
@@ -90,11 +79,12 @@ public class Com {
         int bytes_read = 0;
         int offset = 0;
         byte[] byte_array = new byte[1024];
-
+        
         try (FileInputStream fis = new FileInputStream(file)) {
+
             this.out.writeObject(file.getName());
             this.out.flush();
-            this.out.writeObject(file.length());
+            this.out.writeLong(file.length());
             this.out.flush();
 
             while((offset + 1024) < (int) file.length()) {
@@ -165,7 +155,7 @@ public class Com {
             while((offset + 1024) <= (int) size) {
                 bytes_read = this.in.read(byte_array, 0, 1024);
                 //TODO:ERROR check if offset here is creating a problem, normally was 0.
-                fos.write(byte_array, offset, bytes_read);
+                fos.write(byte_array, 0, bytes_read);
                 fos.flush();
                 offset += bytes_read;
             }
@@ -173,7 +163,7 @@ public class Com {
             if(offset != (int) size) {
                 bytes_read = this.in.read(byte_array, 0, (int) size - offset);
                 //TODO:ERROR check if offset here is creating a problem, normally was 0.
-                fos.write(byte_array, offset, bytes_read);
+                fos.write(byte_array, 0, bytes_read);
                 fos.flush();
             }
         } catch(IOException e) {
@@ -199,14 +189,14 @@ public class Com {
             while((offset + 1024) <= (int) size) {
                 bytes_read = this.in.read(byte_array, 0, 1024);
                 //TODO:ERROR check if offset here is creating a problem, normally was 0.
-                fos.write(byte_array, offset, bytes_read);
+                fos.write(byte_array, 0, bytes_read);
                 fos.flush();
                 offset += bytes_read;
             }
             if(offset != (int) size) {
                 bytes_read = this.in.read(byte_array, 0, 1024);
                 //TODO:ERROR check if offset here is creating a problem, normally was 0.
-                fos.write(byte_array, offset, bytes_read);
+                fos.write(byte_array, 0, bytes_read);
                 fos.flush();
             } 
         } catch(IOException | ClassNotFoundException e) {

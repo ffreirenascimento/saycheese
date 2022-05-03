@@ -17,26 +17,20 @@ public class Com {
 
     private ObjectInputStream in = null;
     private ObjectOutputStream out = null;
-    private BufferedOutputStream bos = null;
     private Socket socket;
 
-    public Com(Socket socket) {
-        this.socket = socket;
+    public Com(Socket client_socket) {
+        socket = client_socket;
+        open();
     }
-
-    public Com(Socket socket, ObjectInputStream in, ObjectOutputStream out) {
-		this.socket = socket;
-		this.in = in;
-		this.out = out;
-	}
 
     /**
      * Method that initializes the channels of communication
     */
     public void open() {
         try {
-            this.in = new ObjectInputStream(this.socket.getInputStream());
-            this.out = new ObjectOutputStream(this.socket.getOutputStream());
+            this.in = new ObjectInputStream(socket.getInputStream());
+            this.out = new ObjectOutputStream(socket.getOutputStream());
         } catch (IOException e) {
             System.err.println("Error creating streams - COM");
             System.exit(-1);
@@ -50,9 +44,6 @@ public class Com {
      */
     public void send(Object obj) throws IOException {
         try {
-            // Send type of object first
-            this.out.writeObject(obj.getClass().getName());
-            this.out.flush();
             // Send object itself
             this.out.writeObject(obj);
             this.out.flush();
@@ -67,7 +58,6 @@ public class Com {
      */
     public Object receive() {
         Object obj = null;
-
         try {
             obj = this.in.readObject();
         } catch (ClassNotFoundException | IOException e) {
@@ -89,7 +79,11 @@ public class Com {
         int offset = 0;
         byte[] byte_array = new byte[1024];
 
-        this.out.writeObject(file.getName());
+        String[] extension = file.getName().split(".");
+        if (extension.length == 0) 
+            this.out.writeObject(".jpg");
+        else 
+            this.out.writeObject(extension[extension.length - 1]);
         this.out.flush();
         this.out.writeLong(file.length());
         this.out.flush();
@@ -213,7 +207,6 @@ public class Com {
                 System.out.println("Waiting for current operations...");
             this.in.close();
             this.out.close();
-            this.bos.close();
             this.socket.close();
         } catch (IOException e) {
             System.err.println(e.getMessage());

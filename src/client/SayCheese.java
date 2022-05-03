@@ -3,13 +3,20 @@ package src.client;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.List;
 
 public class SayCheese {
 
-    public void main(String[] args) {
+    private static void show_sep() {
+        System.out.println("=======");
+    }
 
+    public static void main(String[] args) throws IOException {
+
+        String client_id;
         int args_len = args.length;
         String separator = "======================================";
+        
 
         // Verify arguments:
         // SayCheese <serverAddress> <clientID> [password]
@@ -20,11 +27,13 @@ public class SayCheese {
             System.exit(-1);
         }
 
-        System.out.println("Client initialized");
+        client_id = args[1];
 
         // Create connection with server
+        ClientStub cs = new ClientStub(args[0]);
 
         // Login
+        cs.login(client_id, args[2]);
 
         // Main client loop
         boolean stop = false;
@@ -51,9 +60,10 @@ public class SayCheese {
             );
 
             String[] input = null;
+            List<String> result = null;
 
             try {
-                System.out.println(">>>");
+                System.out.print(">>>");
                 input = new BufferedReader(new InputStreamReader(System.in)).readLine().split(" ");
             } catch (IOException e) {
                 System.err.println(e.getMessage());
@@ -61,30 +71,123 @@ public class SayCheese {
             }
 
             // Check option chosen
-
             switch (input[0]) {
                 case "f":
                 case "follow":
+                    switch (cs.follow(input[1], client_id)) {
+                        case 0:
+                            show_sep();
+                            System.out.println("Successfully followed " + input[1]);
+                            show_sep();
+                            break;
+                        case 1:
+                            show_sep();
+                            System.out.println("The user is already followed");
+                            show_sep();
+                            break;
+                        case -1:
+                            show_sep();
+                            System.out.println("The user does not exist");
+                            show_sep();
+                            break;
+                        default:
+                            break;
+                    }
                     break;
-            
+                case "u":
+                case "unfollow":
+                    switch (cs.unfollow(input[1], client_id)) {
+                        case 0:
+                            show_sep();
+                            System.out.println(input[1] + " unfollowed successfully");
+                            show_sep();
+                            break;
+                        case 1:
+                            show_sep();
+                            System.out.println("The user does not exist");
+                            show_sep();
+                            break;
+                        case 2:
+                            show_sep();
+                            System.out.println("The user is not followed yet. Please call this " +
+                                               "Operation over a user you already follow.");
+                            show_sep();
+                            break;
+                        case -1: 
+                            show_sep();
+                            System.out.println("Error while unfollowing user...Try again later.");
+                            show_sep();
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                case "v":
+                case "viewfollowers":
+                    result = cs.viewFollowers(client_id);
+                    if (result != null) {
+                        // No followers.
+                        if (result.isEmpty()) {
+                            show_sep();
+                            System.out.println("You have no followers so far.");
+                            show_sep();
+                        } else {
+                            // Print all followers.
+                            show_sep();
+                            System.out.println("Followers:");
+                            result.forEach(System.out::println);
+                            show_sep();
+                        }
+                    } else {
+                        show_sep();
+                        System.out.println("Error while concluding operation.");
+                        show_sep();
+                    }
+                    break;
+                case "p":
+                case "post":
+                    if(cs.post(input[1])) {
+                        show_sep();
+                        System.out.println("Photo posted with success.");
+                        show_sep();
+                    } else {
+                        show_sep();
+                        System.out.println("Error while posting photo.");
+                        show_sep();
+                    }
+                    break;
+                case "w":
+                case "wall":
+                    List<String> photos = cs.wall(input[1], client_id);
+                    if (photos.size() == 1) {
+                        show_sep();
+                        System.out.println("No pictures to show yet.");
+                        show_sep();
+                    }
+                    else {
+                        show_sep();
+                        photos.forEach(System.out::println);
+                        show_sep();
+                    }
+                    break;
                 case "s":
                 case "stop":
-                    System.out.println(separator);  
+                    show_sep();  
                     System.out.println("Stopping the application");
-                    System.out.println(separator);
+                    show_sep();
                     stop = true;
                     break;
                 default:
-                    System.out.println(separator);
+                    show_sep();
                     System.out.println("Invalid input");
-                    System.out.println(separator);
+                    show_sep();
                     break;
             }
         }
 
-        System.out.println(separator);
+        show_sep();
         System.out.println("End of session");
-        System.out.println(separator);
+        show_sep();
     }
     
 }

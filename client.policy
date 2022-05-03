@@ -1,0 +1,13 @@
+grant codeBase "file:bin/" {
+    permission java.net.SocketPermission "*:1-","resolve,connect";
+    permission java.io.FilePermission "wall","read,write";
+    permission java.io.FilePermission "wall/-","read,write";
+    permission java.io.FilePermission "Photos/-", "read";
+};
+
+grant codeBase "file:SayCheese.jar" {
+    permission java.net.SocketPermission "*:1-","resolve,connect";
+    permission java.io.FilePermission "wall","read,write";
+    permission java.io.FilePermission "wall/-","read,write";
+    permission java.io.FilePermission "Photos/-", "read";
+};
