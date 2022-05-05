@@ -170,6 +170,25 @@ public class SayCheese {
                         show_sep();
                     }
                     break;
+                case "l":
+                case "like":
+                    show_sep();
+                    switch (cs.like(input[1])) {
+                        case 0:
+                            System.out.println("Photo liked");
+                            break;
+                        case 1:
+                            System.out.println("Photo disliked");
+                            break;
+                        case 2:
+                            System.out.println("Photo does not exist");
+                            break;
+                        case -1:
+                            System.err.println("Error while liking photo");
+                        default:
+                            break;
+                    }
+                    show_sep();
                 case "s":
                 case "stop":
                     show_sep();  

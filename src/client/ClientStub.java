@@ -459,13 +459,15 @@ public class ClientStub {
     }
 
     /**
-     * Current user likes photo_id.
+     * Current user likes or dislikes photo_id.
      * @param photo_id photo to be liked.
-     * @return 0 if successful,
-     * -1 if not.
+     * @return 0 if liked,
+     *         1 if disliked,
+     *         2 if photo does not exist,
+     *         -1 if error.
      */
     public int like(String photo_id) {
-        int result = -1;
+        int result;
         try {
             com.send("l");
             com.send(photo_id);

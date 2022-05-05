@@ -308,7 +308,7 @@ public class SayCheeseServer {
                                 com.send(array_to_send.size() / 3);
                                 for (int i = 0; i < array_to_send.size(); i += 3) {
                                     // Send photo identifier.
-                                    com.send(array_to_send.get(i));
+                                    com.send(trimPhotoPath(array_to_send.get(i), array_to_send.get(i+1)));
                                     // Send the owner of the photo.
                                     com.send(array_to_send.get(i+1));
                                     // Send number of photo likes
@@ -320,7 +320,7 @@ public class SayCheeseServer {
                         case "l":
                             // Receive photo_id.
                             aux = (String) com.receive();
-                            com.send(like(aux));
+                            com.send(like(aux, client_id));
                             break;
                         case "n":
                             // receive <group_id>:<current user>
@@ -393,6 +393,22 @@ public class SayCheeseServer {
             System.out.println("------------------------------------------");
         }
 
+        /**
+         * Transforms the photo path of the photo into a safer id to be
+         * sent back to the client. 
+         * In such a format: <photo_owner>:<photo_number>
+         * @param photo_id
+         * @param photo_owner
+         * @return String with the formatted photo_id
+         */
+        private Object trimPhotoPath(String photo_id, String photo_owner) {
+            // According to our file structure the path to a photo will 
+            // be of the sort: files/user/freire/photos/p-1.jpg
+            //                  (0)                      (4)
+            String photo = photo_id.split("/")[4];
+            return photo_owner + ":" + photo;
+        }
+
         private Object history(String string, String string2) {
             return null;
         }
@@ -429,8 +445,24 @@ public class SayCheeseServer {
             return null;
         }
 
-        private Object like(String aux) {
-            return null;
+        /**
+         * Likes or dislikes the photo_id.
+         * @param photo_id 
+         * @param client_id
+         * @return 0 if liked,
+         *         1 if disliked,
+         *         2 if photo does not exist,
+         *        -1 if error.
+         */
+        private int like(String photo_id, String client_id) {
+            int result = -1;
+            
+            // Look for photo
+            String photo_path = "files/user/" + client_id + "/photos/" + photo_id;
+            File photos_folder = new File("files/user/" + client_id + "/photos/");
+
+        
+            return result;
         }
 
         /**
