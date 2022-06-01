@@ -463,13 +463,22 @@ public class SayCheeseServer {
                 return -1;
             if (!globals.getUser_photos().get(photo_parameters[0]).contains(photo_id))
                 return 2; // photo does not exist.
-            List<String> users = globals.getPhoto_likes().get(photo_parameters[0]);
+            Map<String, List<String>> photoLikes = globals.getPhoto_likes();
+            List<String> users = photoLikes.get(photo_id);
             // If photo already liked then dislike.
-            if (users.contains(current_user))
-                users.remove(current_user);
-            // Else like photo.
-            else
+            if (users != null) {
+                if (users.contains(current_user)) {
+                    users.remove(current_user);
+                    return 1;
+                }
+                // Else like photo.
+                else
+                    users.add(current_user);
+            } else {
+                users = new ArrayList<>();
                 users.add(current_user);
+                photoLikes.put(photo_id, users);
+            }
             
             return 0;
         }
