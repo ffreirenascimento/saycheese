@@ -1,19 +1,22 @@
 package src.server;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.Writer;
+import java.io.Reader;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.stream.IntStream;
+import com.google.gson.*;
 
 public class SayCheeseServer {
 
@@ -23,8 +26,11 @@ public class SayCheeseServer {
     private File users_file;
     private File groups_folder;
     private File global_counter_file;
+    private ServerGlobals globals;
 
     public static void main(String[] args) {
+
+        
         System.out.println("------Server Initialized------");
         SayCheeseServer server = new SayCheeseServer();
         if (args.length == 0) {
@@ -33,7 +39,7 @@ public class SayCheeseServer {
         }
         server.startServer(args[0]);
     }
-
+    
     /**
      * Opens communication channel,
      * creates necessary files and folders
@@ -42,9 +48,33 @@ public class SayCheeseServer {
      * @param socket
      */
     public void startServer(String socket) {
+        
+        Gson gson = new Gson();
 
+        globals = new ServerGlobals();
+
+        File globals_file = new File("files/server/globals.json");
+        if (!globals_file.exists()) {
+            try {
+                globals_file.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        
+        // In case of server shutdown, save global variables into a file.
+        Thread shutdown = new Thread(() -> {
+            try (FileWriter globals_fw = new FileWriter(globals_file)) {
+                gson.toJson(globals, globals_fw);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            System.out.println("\nShuting down server...");
+        });
+        Runtime.getRuntime().addShutdownHook(shutdown);
+
+        // Initiate socket for communication.
         ServerSocket ssoc = null;
-
         try {
             ssoc = new ServerSocket(Integer.parseInt(socket));
         } catch (IOException e) {
@@ -52,9 +82,19 @@ public class SayCheeseServer {
             System.exit(-1);
         }
 
-        FileWriter global_counter_file_fw;
+        // Initialize global variables with previous values from JSON file.
+        // 1. Check if JSON file is empty.
+        if (globals_file.length() != 0) {
+            try (Reader globals_reader = new FileReader(globals_file)) {
+                globals = gson.fromJson(globals_reader, ServerGlobals.class);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
 
         // Create files and folders
+        FileWriter global_counter_file_fw; 
         try {
             files_folder = new File("files");
             files_folder.mkdir();
@@ -109,26 +149,23 @@ public class SayCheeseServer {
      *         The new user was created and authenticated.
      */
     public int isAuthenticated(String client_id, String password) {
-        String line;
-        String[] user_password;
-        try (Scanner sc = new Scanner(users_file)) {
-            while (sc.hasNextLine()) {
-                line = sc.nextLine();
-                user_password = line.split(":");
-                if (user_password[0].equals(client_id)) {
-                    if (user_password[1].equals(password)) {
-                        // Authentication successful.
-                        return 0;
-                    }
-                    // Wrong password.
-                    return -1;
-                }
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+        if (globals == null) {
+            globals = new ServerGlobals();
         }
-        // User does not exist.
-        return 1;
+
+        Map<String, String> users = globals.getUsers();
+        
+        if(users == null) {
+            users = new HashMap<>();
+        }
+       
+        // Check if user exists
+        if (!users.containsKey(client_id))
+            return 1;
+        // Check if password is correct
+        if (!users.get(client_id).equals(password))
+            return -1;
+        return 0;
     }
 
     /**
@@ -138,40 +175,26 @@ public class SayCheeseServer {
      * @param client_id
      * @param user_name
      * @param password
-     * @return 0 if successful, -1 if not.
      */
-    public int addUserPswrd(String client_id, String user_name, String password) {
-        try (Writer output = new BufferedWriter(new FileWriter(users_file, true))) {
-            // Save credentials.
-            output.append(client_id + ":" + user_name + ":" + password + "\n");
-            
-            String user_page_path = "files/user/" + client_id;
-
-            File user_page = new File(user_page_path);
-            user_page.mkdir();
-
-            Writer user_followers = new BufferedWriter(new FileWriter(user_page_path + "/followers.txt", true));
-            user_followers.close();
-
-            Writer user_following = new BufferedWriter(new FileWriter(user_page_path + "/following.txt", true));
-            user_following.close();
-
-            Writer user_participant = new BufferedWriter(new FileWriter(user_page_path + "/participant.txt", true));
-            user_participant.close();
-
-            Writer user_owner = new BufferedWriter(new FileWriter(user_page_path + "/owner.txt", true));
-            user_owner.close();
-
-            File photos_folder = new File(user_page_path + "/photos");
-            photos_folder.mkdir();
-
-            System.out.println("Files and folders created for new user");
-            return 0;
-        } catch (IOException e) {
-            System.err.println("Not possible to create a new user");
-            e.printStackTrace();
-        }
-        return -1;
+    public void addUserPswrd(String client_id, String user_name, String password) {
+        Map<String,String> users = globals.getUsers();
+        Map<String, List<String>> user_photos = globals.getUser_photos();
+        Map<String, List<String>> user_followers = globals.getUser_followers();
+        Map<String, List<String>> user_follows = globals.getUser_follows();
+        Map<String, List<String>> user_owner = globals.getUser_owner();
+        Map<String, List<String>> user_participant = globals.getUser_participant();
+        users.put(client_id, password);
+        user_photos.put(client_id, new ArrayList<String>());
+        user_followers.put(client_id, new ArrayList<String>());
+        user_follows.put(client_id, new ArrayList<String>());
+        user_owner.put(client_id, new ArrayList<String>());
+        user_participant.put(client_id, new ArrayList<String>());
+        globals.setUsers(users);
+        globals.setUser_photos(user_photos);
+        globals.setUser_followers(user_followers);
+        globals.setUser_follows(user_follows);
+        globals.setUser_owner(user_owner);
+        globals.setUser_participant(user_participant);
     }
 
     /**
@@ -198,7 +221,7 @@ public class SayCheeseServer {
          */
         @Override
         public void run() {
-                Com com = new Com(socket, in, out);
+                Com com = new Com(socket, in, out, globals);
 
                 String client_id = null;
                 String password = null;
@@ -236,11 +259,9 @@ public class SayCheeseServer {
 
                     String aux = null;
                     String[] content = null;
-                    StringBuilder message_sb = new StringBuilder();
-                    String message = null;
                     String group_id = null;
                     String groups = null;
-                    int n_photos = 0;
+                    String n_photos = null;
                     List<String> array_to_send;
 
                     // Execute:
@@ -263,38 +284,15 @@ public class SayCheeseServer {
                             com.send(viewFollowers(aux));
                             break;
                         case "p":
-                            // increment global photo counter.
-                            File global_counter_file = new File("files/server/globalPhotoCounter.txt");
-                            int counter = 0;
-                            try {
-                                Scanner counter_sc = new Scanner(global_counter_file);
-                                counter = Integer.parseInt(counter_sc.nextLine());
-                                counter += 1;
-                                FileWriter counter_wr = new FileWriter(global_counter_file, false);
-                                counter_wr.write(String.valueOf(counter));
-                                counter_sc.close();
-                                counter_wr.close();
-                            } catch (Exception e) {
-                                e.printStackTrace();
-                            }
-
-                            // Receive photo.
-                            try {
-                                com.receiveFilePost(client_id);
-                                com.send(true);
-                            } catch (Exception e) {
-                                com.send(false);
-							    e.printStackTrace();
-                                System.err.println("Error while posting photo");   
-                            }
+                            com.send(post(client_id, com));
                             break;
                         case "w":
                             // current user
                             aux = (String) com.receive();
                             // receive n_photos
-                            n_photos = (int) com.receive();
+                            n_photos = (String) com.receive();
                             // wall
-                            array_to_send = wall(aux, n_photos);
+                            array_to_send = wall(aux, Integer.valueOf(n_photos));
 
                             // In case of error.
                             if (array_to_send.size() < 3) {
@@ -308,15 +306,16 @@ public class SayCheeseServer {
                                 com.send(array_to_send.size() / 3);
                                 for (int i = 0; i < array_to_send.size(); i += 3) {
                                     // Send photo identifier.
-                                    com.send(trimPhotoPath(array_to_send.get(i), array_to_send.get(i+1)));
+                                    com.send(array_to_send.get(i));
                                     // Send the owner of the photo.
                                     com.send(array_to_send.get(i+1));
                                     // Send number of photo likes
                                     com.send(array_to_send.get(i+2));
                                     // Photo identifier to "com.java"
-                                    com.sendFile(array_to_send.get(i).toString());
+                                    com.sendFile(array_to_send.get(i), array_to_send.get(i+1));
                                 }
                             }
+                            break;
                         case "l":
                             // Receive photo_id.
                             aux = (String) com.receive();
@@ -394,19 +393,23 @@ public class SayCheeseServer {
         }
 
         /**
-         * Transforms the photo path of the photo into a safer id to be
-         * sent back to the client. 
-         * In such a format: <photo_owner>:<photo_number>
-         * @param photo_id
-         * @param photo_owner
-         * @return String with the formatted photo_id
+         * Receives a photo and saves it to the current user's files.
+         * @param current_user
+         * @param com Communication channel
+         * @return true if successful, false if not.
          */
-        private Object trimPhotoPath(String photo_id, String photo_owner) {
-            // According to our file structure the path to a photo will 
-            // be of the sort: files/user/freire/photos/p-1.jpg
-            //                  (0)                      (4)
-            String photo = photo_id.split("/")[4];
-            return photo_owner + ":" + photo;
+        private boolean post(String current_user, Com com) {
+            // increment global photo counter.
+            int gpc = globals.getGpc();
+            globals.setGpc(gpc + 1);
+
+            // Receive photo.
+            try {
+                com.receiveFilePost(current_user);
+                return true;
+            } catch (Exception e) {
+                return false;
+            }
         }
 
         private Object history(String string, String string2) {
@@ -448,21 +451,27 @@ public class SayCheeseServer {
         /**
          * Likes or dislikes the photo_id.
          * @param photo_id 
-         * @param client_id
          * @return 0 if liked,
          *         1 if disliked,
          *         2 if photo does not exist,
          *        -1 if error.
          */
-        private int like(String photo_id, String client_id) {
-            int result = -1;
-            
+        private int like(String photo_id, String current_user) {
             // Look for photo
-            String photo_path = "files/user/" + client_id + "/photos/" + photo_id;
-            File photos_folder = new File("files/user/" + client_id + "/photos/");
-
-        
-            return result;
+            String[] photo_parameters = photo_id.split("-");
+            if (photo_parameters.length != 2)
+                return -1;
+            if (!globals.getUser_photos().get(photo_parameters[0]).contains(photo_id))
+                return 2; // photo does not exist.
+            List<String> users = globals.getPhoto_likes().get(photo_parameters[0]);
+            // If photo already liked then dislike.
+            if (users.contains(current_user))
+                users.remove(current_user);
+            // Else like photo.
+            else
+                users.add(current_user);
+            
+            return 0;
         }
 
         /**
@@ -480,24 +489,10 @@ public class SayCheeseServer {
          */
         private List<String> wall(String current_user, int n_photos) {
             // Get the following from the current user.
-            List<String> following = new ArrayList<>();
-            try (Scanner following_sc = new Scanner(new File("files/user/" + current_user + "/following.txt"))) {
-                while (following_sc.hasNextLine()) {
-                    following.add(following_sc.nextLine());
-                }
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-                return null;
-            }
+            List<String> following = globals.getUser_follows().get(current_user);
             
             // Get current global_photo_counter.
-            int global_counter;
-            try (Scanner gpc_sc = new Scanner(global_counter_file)) {
-                global_counter = gpc_sc.nextInt();
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-                return null;
-            }
+            int global_counter = globals.getGpc();
             
             // Get all the photos from the users in the range: 
             // [global_photo_counter - n_photos + 1..global_photo_counter].
@@ -505,28 +500,20 @@ public class SayCheeseServer {
             for (String follow : following) {
                 IntStream range_photos = IntStream.range(global_counter - n_photos + 1, global_counter + 1);
                 // Search for the photos in the previous announced range
-                // in the files of the following.
-                String photos_path = "files/user/" + follow + "/photos/";
-                String likes_path = "files/user/" + follow + "/photos/l-";
-                File follower_folder = new File(photos_path);
-                String[] photo_names = follower_folder.list();
+                List<String> user_photos = globals.getUser_photos().get(follow);
                 range_photos.forEach(number -> {
-                    for (String photo : photo_names) {
-                        if (photo.contains("p-" + number)) {
-                            File likes = new File(likes_path + number + ".txt");
-                            try (Scanner likes_sc = new Scanner(likes)) {
-                                photos.add(photos_path + photo);
-                                photos.add(follow);
-                                photos.add(likes_sc.nextLine());
-                            } catch (FileNotFoundException e) {
-                                e.printStackTrace();
-                            }
+                    for (String photo : user_photos) {
+                        if (photo.contains(follow + "-" + number)) {
+                            int photo_likes = globals.getPhoto_likes().get(photo).size();
+                            photos.add(photo);
+                            photos.add(follow);
+                            photos.add(String.valueOf(photo_likes));
                         }
                     }
                 });
-                range_photos.close();
             }
 
+            
             // Check if there are no photos to be shown.
             if (photos.isEmpty())
                 photos.add("1");
@@ -538,26 +525,14 @@ public class SayCheeseServer {
         /**
          * Gets the list of followers of client_id.
          * @param client_id
-         * @return List of followers. Null if error.
+         * @return List of followers. null if error.
          */
-        private Object viewFollowers(String client_id) {
+        private List<String> viewFollowers(String client_id) {
             // Check if user exists.
-            File user_folder = new File("files/user/" + client_id);
-            if (!user_folder.exists())
-                return null;
-            
+            if (!globals.getUsers().containsKey(client_id))
+                return new ArrayList<>();
             // Get followers.
-            List<String> followers = new ArrayList<>();
-            try (Scanner followers_sc = new Scanner(new File("files/user/" + client_id + "/followers.txt"))) {
-                while (followers_sc.hasNextLine()) {
-                    followers.add(followers_sc.nextLine());
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-                return null;
-            }
-
-            return followers;
+            return globals.getUser_followers().get(client_id);
         }
 
         /**
@@ -571,66 +546,26 @@ public class SayCheeseServer {
          */
         private Object unfollow(String user_id, String current_user) {
             // Verify if user_id exists.
-            File user_id_folder = new File("files/user/" + user_id);
-            if (!user_id_folder.exists())
+            Map<String,String> users = globals.getUsers();
+            if (!users.containsKey(user_id))
                 return 1;
 
-            File following_file = new File("files/user/" + current_user + "/following.txt");
-
             //  Verify if user_id is not followed.
-            boolean is_followed = false;
-            try(Scanner following_sc = new Scanner(following_file)) {
-                while (following_sc.hasNextLine()) {
-                    if (following_sc.nextLine().contentEquals(user_id)) {
-                        is_followed = true;
-                        break;
-                    }
-                }
-                if (!is_followed) 
-                    return 2;
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-                return -1;
-            }
+            Map<String,List<String>> user_follows = globals.getUser_follows();
+            List<String> following = user_follows.get(current_user);
+            if (!following.contains(user_id)) 
+                return 2;
             
             // Remove user_id from current user's following.
-            File following_temp_file = new File("files/user/" + current_user + "/followingTemp.txt");
-            try (Scanner following_sc = new Scanner(following_file);
-                 FileWriter following_fw = new FileWriter(following_temp_file)) {
-                    while (following_sc.hasNextLine()) {
-                        String line = following_sc.nextLine();
-                        // If not user_id append to temp file.
-                        if (!line.contentEquals(user_id)) {
-                            following_fw.append(line + "\n");
-                        }
-                    }
-                    // Remove following_file.
-                    following_file.delete();
-                    // Rename temp file.
-                    following_temp_file.renameTo(following_file);
-            } catch (IOException e) {
-                e.printStackTrace();
-                return -1;
-            }
+            following.remove(user_id);
+            user_follows.put(current_user, following);
+            globals.setUser_follows(user_follows);
             
             // Remove current user from user_id followers file.
-            File followers_file = new File("files/user/" + user_id + "/followers.txt");
-            File followers_file_temp = new File("files/user/" + user_id + "/followersTemp.txt");
-            try (Scanner followers_sc = new Scanner(followers_file);
-                FileWriter followers_fw = new FileWriter(followers_file_temp, true)) 
-                {
-                    while (followers_sc.hasNextLine()) {
-                        String line = followers_sc.nextLine();
-                        if (!line.contentEquals(current_user)) {
-                            followers_fw.append(line + "\n");
-                        }
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    return -1;
-                }
-            followers_file.delete();
-            followers_file_temp.renameTo(followers_file);
+            Map<String,List<String>> user_followers = globals.getUser_followers();
+            List<String> followers = user_followers.get(user_id);
+            followers.remove(current_user);
+            user_followers.put(user_id, followers);
 
             return 0;
         }
@@ -645,35 +580,27 @@ public class SayCheeseServer {
          */
         private int follow(String user_id, String current_user) {
             // Verify if user_id exists.
-            File user_id_folder = new File("files/user/" + user_id);
-            if (!user_id_folder.exists())
+            Map<String,String> users = globals.getUsers();
+            if (!users.containsKey(user_id))
                 return -1;
-            
+
             // Verify if user_id is already been followed.
-            File following_file = new File("files/user/" + current_user + "/following.txt");
-            try (Scanner following_sc = new Scanner(following_file)) {
-                while (following_sc.hasNextLine()) {
-                    if (following_sc.nextLine().contentEquals(user_id))
-                        return 1;
-                }
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            }
+            Map<String,List<String>> user_follows = globals.getUser_follows();
+            List<String> following = user_follows.get(current_user);
+            if (following.contains(user_id)) 
+                return 1;
 
             // user_id exists and is not been followed yet.
             // Add user_id to current user's following.txt.
-            try (FileWriter following_fw = new FileWriter(following_file, true)) {
-                following_fw.append(user_id + "\n");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            following.add(user_id);
+            user_follows.put(current_user, following);
+            globals.setUser_follows(user_follows);
 
             // Add current user to user_id's followers.txt.
-            try (FileWriter follower_fw = new FileWriter(new File("files/user/" + user_id + "/followers.txt"), true)) {
-                follower_fw.append(current_user + "\n");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            Map<String,List<String>> user_followers = globals.getUser_followers();
+            List<String> followers = user_followers.get(user_id);
+            followers.add(current_user);
+            user_followers.put(user_id, followers);
 
             return 0;
         }

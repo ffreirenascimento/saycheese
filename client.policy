@@ -3,6 +3,7 @@ grant codeBase "file:bin/" {
     permission java.io.FilePermission "wall","read,write";
     permission java.io.FilePermission "wall/-","read,write";
     permission java.io.FilePermission "Photos/-", "read";
+    permission java.lang.RuntimePermission "shutdownHooks";
 };
 
 grant codeBase "file:SayCheese.jar" {

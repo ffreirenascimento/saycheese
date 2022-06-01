@@ -13,10 +13,13 @@ public class SayCheese {
 
     public static void main(String[] args) throws IOException {
 
+        Thread shutdown = new Thread(() -> {
+            System.out.println("\nShuting down client...");
+        });
+        Runtime.getRuntime().addShutdownHook(shutdown);
+
         String client_id;
         int args_len = args.length;
-        String separator = "======================================";
-        
 
         // Verify arguments:
         // SayCheese <serverAddress> <clientID> [password]
@@ -125,22 +128,16 @@ public class SayCheese {
                 case "v":
                 case "viewfollowers":
                     result = cs.viewFollowers(client_id);
-                    if (result != null) {
-                        // No followers.
-                        if (result.isEmpty()) {
-                            show_sep();
-                            System.out.println("You have no followers so far.");
-                            show_sep();
-                        } else {
-                            // Print all followers.
-                            show_sep();
-                            System.out.println("Followers:");
-                            result.forEach(System.out::println);
-                            show_sep();
-                        }
-                    } else {
+                    if (!result.isEmpty()) {
+                        // Print all followers.
                         show_sep();
-                        System.out.println("Error while concluding operation.");
+                        System.out.println("Followers:");
+                        result.forEach(System.out::println);
+                        show_sep();
+                    } else {
+                        // No followers.
+                        show_sep();
+                        System.out.println("No followers");
                         show_sep();
                     }
                     break;
@@ -158,8 +155,19 @@ public class SayCheese {
                     break;
                 case "w":
                 case "wall":
+                    if (input.length != 2) {
+                        show_sep();
+                        System.out.println("Please provide only the number of photos to be shown from the wall");
+                        show_sep();
+                        break;
+                    }
                     List<String> photos = cs.wall(input[1], client_id);
-                    if (photos.size() == 1) {
+                    if (photos == null) {
+                        show_sep();
+                        System.out.println("Error on operation.");
+                        show_sep();
+                    }
+                    if (photos.get(0) == "1") {
                         show_sep();
                         System.out.println("No pictures to show yet.");
                         show_sep();

@@ -1,16 +1,15 @@
 package src.server;
 
-import java.io.BufferedOutputStream;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.util.Scanner;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -21,11 +20,13 @@ public class Com {
     private ObjectInputStream in = null;
     private ObjectOutputStream out = null;
     private Socket socket;
+    private ServerGlobals globals;
 
-    public Com(Socket socket, ObjectInputStream in, ObjectOutputStream out) {
+    public Com(Socket socket, ObjectInputStream in, ObjectOutputStream out, ServerGlobals globals) {
         this.socket = socket;
         this.in = in;
         this.out = out;
+        this.globals = globals;
     }
 
     /**
@@ -74,12 +75,12 @@ public class Com {
      * Sends out file through communication channel
      * @param file_name
      */
-    public void sendFile(String file_name) {
-        File file = new File(file_name);
+    public void sendFile(String file_name, String photo_owner) {
+        File file = new File("files/" + file_name + ".jpg");
         int bytes_read = 0;
         int offset = 0;
         byte[] byte_array = new byte[1024];
-        
+
         try (FileInputStream fis = new FileInputStream(file)) {
 
             this.out.writeObject(file.getName());
@@ -116,13 +117,10 @@ public class Com {
         int bytes_read = 0;
         int offset = 0;
         byte[] byte_array = new byte[1024];
-        File gpc_file = new File("files/server/globalPhotoCounter.txt");
-        int global_counter = 0;
+        // Obtain gcp
+        int global_counter = globals.getGpc();
 
-        try (Scanner gcp_sc = new Scanner(gpc_file)) {
-            if(gcp_sc.hasNextLine()) {
-                global_counter = Integer.parseInt(gcp_sc.nextLine());
-            }
+        try {
             file_format = (String) this.in.readObject();
             size = this.in.readLong();
         } catch(IOException | ClassNotFoundException e) {
@@ -134,27 +132,25 @@ public class Com {
             System.err.println("File format or size not received");
             System.exit(-1);
         }
+        
+        // Create likes entry.
+        Map<String, List<String>> photo_likes = globals.getPhoto_likes();
+        photo_likes.put(user_name + "-" + global_counter, new ArrayList<>());
 
-        File photo_file = new File("files/user/" + user_name +
-                                    "/photos/p-" + global_counter +
+        // Save photo file.
+        File photo_file = new File("files/" + user_name + "-" + + global_counter +
                                     file_format);
-        File likes_file = new File("files/user/" + user_name + 
-                                    "/photos/l-" + global_counter +
-                                    ".txt");
         try {
-            FileWriter likes_fw = new FileWriter(likes_file);
-            BufferedWriter likes_bw = new BufferedWriter(likes_fw);
-            likes_bw.write("0");
-            likes_bw.close();
-        } catch(IOException e) {
-			e.printStackTrace();
-			System.exit(-1);
-		}
+            photo_file.createNewFile();
+        } catch (Exception e) {
+            //TODO: handle exception
+        }
+        Map<String, List<String>> user_photos = globals.getUser_photos();
+        user_photos.get(user_name).add(user_name + "-" + global_counter);
 
         try(FileOutputStream fos = new FileOutputStream(photo_file)) {
             while((offset + 1024) <= (int) size) {
                 bytes_read = this.in.read(byte_array, 0, 1024);
-                //TODO:ERROR check if offset here is creating a problem, normally was 0.
                 fos.write(byte_array, 0, bytes_read);
                 fos.flush();
                 offset += bytes_read;
@@ -162,7 +158,6 @@ public class Com {
 
             if(offset != (int) size) {
                 bytes_read = this.in.read(byte_array, 0, (int) size - offset);
-                //TODO:ERROR check if offset here is creating a problem, normally was 0.
                 fos.write(byte_array, 0, bytes_read);
                 fos.flush();
             }

@@ -2,15 +2,10 @@ package src.client;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-
-import javax.swing.InputMap;
 
 public class ClientStub {
 
@@ -430,7 +425,7 @@ public class ClientStub {
         try {
             com.send("w");
             com.send(user_id);
-            com.send(Integer.valueOf(n));
+            com.send(n);
 
             size = (int) com.receive();
 
