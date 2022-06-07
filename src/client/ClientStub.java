@@ -340,7 +340,7 @@ public class ClientStub {
      * @return Names of the groups or empty if 
      * user_id is neither a member or owner.
      */
-    public String[] ginfo(String user_id) {
+    public List<List<String>> ginfo() {
         String groups;
         String[] result = null;
         try {
@@ -369,7 +369,7 @@ public class ClientStub {
      * @return Owner and members of group_id. 
      * null if user_id is not part of the group.
     */
-    public String[] ginfo(String group_id, String user_id) {
+    public List<String> ginfo(String group_id) {
         String info;
         String[] result = null;
         try {
