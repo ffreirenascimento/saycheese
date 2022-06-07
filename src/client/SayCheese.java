@@ -223,6 +223,35 @@ public class SayCheese {
                     show_sep();
                     stop = true;
                     break;
+                case "a":
+                case "addu":
+                    show_sep();
+                    switch (cs.addu(input[1], input[2])) {
+                        case 0:
+                            show_sep();  
+                            System.out.println("User added to group");
+                            show_sep();
+                            break;
+                        case 1:
+                            show_sep();  
+                            System.out.println("Group does not exist");
+                            show_sep();
+                            break;
+                        case 2:
+                            show_sep();  
+                            System.out.println("You are not the group owner\nYou must be the owner of the group to add a member");
+                            show_sep();
+                            break;
+                        case -1:
+                            show_sep();  
+                            System.out.println("Error on operation");
+                            show_sep();
+                            break;
+                        default:
+                            break;
+                    }
+                    show_sep();
+                    break;
                 default:
                     show_sep();
                     System.out.println("Invalid input");
