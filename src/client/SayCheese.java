@@ -251,6 +251,11 @@ public class SayCheese {
                             break;
                         case 3:
                             show_sep();  
+                            System.out.println("User does not exist");
+                            show_sep();
+                            break;
+                        case 4:
+                            show_sep();  
                             System.out.println("User already is in group");
                             show_sep();
                             break;
