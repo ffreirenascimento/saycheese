@@ -196,19 +196,15 @@ public class ClientStub {
      * @param sender_id group creator.
      * @return 0 if group was created successfully. -1 if not.
      */
-    public int newGroup(String group_id, String sender_id) {
-        int result = -1;
-
+    public int newGroup(String group_id) {
         try {
             com.send("n");
-            com.send(group_id + ":" + sender_id);
-            result = (int) com.receive();
+            com.send(group_id);
+            return (int) com.receive();
         } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println("Error while trying to conclude new group operation");
+            // Error on operation.
+            return -1;
         }
-
-        return result;
     }
 
     /**

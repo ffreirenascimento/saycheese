@@ -198,6 +198,22 @@ public class SayCheese {
                     }
                     show_sep();
                     break;
+                case "n":
+                case "newgroup":
+                    show_sep();
+                    switch (cs.newGroup(input[1])) {
+                        case 0:
+                            System.out.println("Group created with success");
+                            break;
+                        case 1:
+                            System.out.println("Group already exists");
+                            break;
+                        case -1:
+                            System.out.println("An error has occurred");
+                            break;
+                        default:
+                            break;
+                    }
                 case "s":
                 case "stop":
                     show_sep();  
