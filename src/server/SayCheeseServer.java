@@ -456,11 +456,16 @@ public class SayCheeseServer {
          * @return 0 if user added to group.
          *         1 if group does not exist.
          *         2 if current user is not the owner of the group.
+         *         3 user does not exist.
+         *         4 user already in group.
          */
         private int addu(String userID, String groupID, String clientID) {
+            Set<String> users = globals.getUsers().keySet();
+            // Verify if user exists.
+            if (!users.contains(userID))
+                return 3;
             // Verify is group exists.
             boolean exists = false;
-            Set<String> users = globals.getUsers().keySet();
             for (String user : users) {
                 List<String> groups = globals.getUser_owner().get(user);
                 if (groups.contains(groupID))
@@ -478,6 +483,10 @@ public class SayCheeseServer {
                 return 2;
             }
 
+            // Verify if user is already in group.
+            if (globals.getUser_participant().get(userID).contains(groupID))
+                return 4;
+                
             // Current user is the owner of groupID.
             // Add new member.
             globals.getUser_participant().get(userID).add(groupID);
