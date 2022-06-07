@@ -214,6 +214,8 @@ public class SayCheese {
                         default:
                             break;
                     }
+                    show_sep();
+                    break;
                 case "s":
                 case "stop":
                     show_sep();  

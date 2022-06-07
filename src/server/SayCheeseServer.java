@@ -15,6 +15,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import com.google.gson.*;
 
@@ -189,12 +191,14 @@ public class SayCheeseServer {
         user_follows.put(client_id, new ArrayList<String>());
         user_owner.put(client_id, new ArrayList<String>());
         user_participant.put(client_id, new ArrayList<String>());
+        // TODO: Check if it's redundant.
         globals.setUsers(users);
         globals.setUser_photos(user_photos);
         globals.setUser_followers(user_followers);
         globals.setUser_follows(user_follows);
         globals.setUser_owner(user_owner);
         globals.setUser_participant(user_participant);
+        // ===
     }
 
     /**
@@ -322,10 +326,9 @@ public class SayCheeseServer {
                             com.send(like(aux, client_id));
                             break;
                         case "n":
-                            // receive <group_id>:<current user>
+                            // receive <group_id>
                             aux = (String) com.receive();
-                            content = aux.split(":");
-                            com.send(newGroup(content[0], content[1]));
+                            com.send(newGroup(aux, client_id));
                             break;
                         case "a":
                             // receive <user_id to add>:<group_id>:<current user>
@@ -444,8 +447,32 @@ public class SayCheeseServer {
             return null;
         }
 
-        private Object newGroup(String string, String string2) {
-            return null;
+        /**
+         * Creates new group which the current user is the owner of
+         * @param groupId name of group
+         * @param owner
+         * @return 0 if created successfully,
+         *         1 if group with the same name exists,
+         */
+        private int newGroup(String groupId, String owner) {
+            // Check if group already exists.
+            Set<String> users = globals.getUsers().keySet();
+            boolean exists = false;
+            for (String user : users) {
+                List<String> groups = globals.getUser_owner().get(user);
+                for (String group : groups) {
+                    if (group.contentEquals(groupId))
+                        exists = true;
+                }
+            }
+            if (exists)
+                return 1;
+            
+            // Add group
+            globals.getUser_owner().get(owner).add(groupId);
+            globals.getUser_participant().get(owner).add(groupId);
+            
+            return 0; 
         }
 
         /**
