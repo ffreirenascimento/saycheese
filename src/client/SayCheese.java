@@ -268,6 +268,51 @@ public class SayCheese {
                             break;
                     }
                     break;
+                    case "r":
+                    case "removeu":
+                        if (input.length != 3) {
+                            show_sep();
+                            System.out.println("Operation should be written as:" + 
+                                               "\nremoveu <user id> <group id>");
+                            show_sep();
+                            break;
+                        }
+                        
+                        switch (cs.removeu(input[1], input[2])) {
+                            case 0:
+                                show_sep();  
+                                System.out.println("User removed from group");
+                                show_sep();
+                                break;
+                            case 1:
+                                show_sep();  
+                                System.out.println("Group does not exist");
+                                show_sep();
+                                break;
+                            case 2:
+                                show_sep();  
+                                System.out.println("You are not the group owner\nYou must be the owner of the group to add a member");
+                                show_sep();
+                                break;
+                            case 3:
+                                show_sep();  
+                                System.out.println("User does not exist");
+                                show_sep();
+                                break;
+                            case 4:
+                                show_sep();  
+                                System.out.println("User already is not in group");
+                                show_sep();
+                                break;
+                            case -1:
+                                show_sep();  
+                                System.out.println("Error on operation");
+                                show_sep();
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
                 default:
                     show_sep();
                     System.out.println("Invalid input");
