@@ -267,6 +267,7 @@ public class SayCheeseServer {
                     String groups = null;
                     String n_photos = null;
                     List<String> array_to_send;
+                    List<String> receivedContent = new ArrayList<>();
 
                     // Execute:
                     switch (operation) {
@@ -331,10 +332,13 @@ public class SayCheeseServer {
                             com.send(newGroup(aux, client_id));
                             break;
                         case "a":
-                            // receive <user_id to add>:<group_id>:<current user>
-                            aux = (String) com.receive();
-                            content = aux.split(":");
-                            com.send(addu(content[0], content[1], content[2]));
+                            // receive
+                            // <user_id to add>
+                            receivedContent.add((String) com.receive());
+                            // <group_id>
+                            receivedContent.add((String) com.receive());
+                            com.send(addu(receivedContent.get(0), receivedContent.get(1), client_id));
+                            receivedContent.clear();
                             break;
                         case "r":
                             // receive <user_id to add>:<group_id>:<current user>
@@ -443,8 +447,42 @@ public class SayCheeseServer {
             return null;
         }
 
-        private Object addu(String string, String string2, String string3) {
-            return null;
+        /**
+         * Adds a user to a group that the 
+         * current user is the owner of.
+         * @param userID user to be added to group.
+         * @param groupID 
+         * @param clientID current user.
+         * @return 0 if user added to group.
+         *         1 if group does not exist.
+         *         2 if current user is not the owner of the group.
+         */
+        private int addu(String userID, String groupID, String clientID) {
+            // Verify is group exists.
+            boolean exists = false;
+            Set<String> users = globals.getUsers().keySet();
+            for (String user : users) {
+                List<String> groups = globals.getUser_owner().get(user);
+                if (groups.contains(groupID))
+                    exists = true;
+            }
+            if (!exists) {
+                // group does not exist.
+                return 1;
+            }
+
+            // Verify if current user has a group with this name.
+            List<String> groups = globals.getUser_owner().get(clientID);
+            if (!groups.contains(groupID)) {
+                // Current user is not the owner of group.
+                return 2;
+            }
+
+            // Current user is the owner of groupID.
+            // Add new member.
+            globals.getUser_participant().get(userID).add(groupID);
+            
+            return 0;
         }
 
         /**
