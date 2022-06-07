@@ -225,6 +225,12 @@ public class SayCheese {
                     break;
                 case "a":
                 case "addu":
+                    if (input.length != 3) {
+                        System.out.println("Operation should be written as:" + 
+                                           "addu <user id> <group id>");
+                        break;
+                    }
+                    
                     show_sep();
                     switch (cs.addu(input[1], input[2])) {
                         case 0:
