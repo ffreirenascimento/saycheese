@@ -249,6 +249,11 @@ public class SayCheese {
                             System.out.println("You are not the group owner\nYou must be the owner of the group to add a member");
                             show_sep();
                             break;
+                        case 3:
+                            show_sep();  
+                            System.out.println("User already is in group");
+                            show_sep();
+                            break;
                         case -1:
                             show_sep();  
                             System.out.println("Error on operation");
