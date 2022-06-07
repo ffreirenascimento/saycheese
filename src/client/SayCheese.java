@@ -226,8 +226,10 @@ public class SayCheese {
                 case "a":
                 case "addu":
                     if (input.length != 3) {
+                        show_sep();
                         System.out.println("Operation should be written as:" + 
-                                           "addu <user id> <group id>");
+                                           "\naddu <user id> <group id>");
+                        show_sep();
                         break;
                     }
                     
