@@ -12,7 +12,9 @@ public class ServerGlobals {
     private Map<String, List<String>> photo_likes;
     private Map<String, List<String>> user_followers;
     private Map<String, List<String>> user_follows;
+    // Stores the groups that some user is owner of.
     private Map<String, List<String>> user_owner;
+    // Stores the groups that some user participates in.
     private Map<String, List<String>> user_participant;
     
     public ServerGlobals() {
