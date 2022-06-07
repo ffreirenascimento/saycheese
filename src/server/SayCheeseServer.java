@@ -341,10 +341,13 @@ public class SayCheeseServer {
                             receivedContent.clear();
                             break;
                         case "r":
-                            // receive <user_id to add>:<group_id>:<current user>
-                            aux = (String) com.receive();
-                            content = aux.split(":");
-                            com.send(removeu(content[0], content[1], content[2]));
+                            // receive
+                            // <user_id to add>
+                            receivedContent.add((String) com.receive());
+                            // <group_id>
+                            receivedContent.add((String) com.receive());
+                            com.send(removeu(receivedContent.get(0), receivedContent.get(1), client_id));
+                            receivedContent.clear();
                             break;
                         case "g":
                             // Current user.
@@ -443,9 +446,6 @@ public class SayCheeseServer {
             return null;
         }
 
-        private Object removeu(String string, String string2, String string3) {
-            return null;
-        }
 
         /**
          * Adds a user to a group that the 
@@ -486,10 +486,56 @@ public class SayCheeseServer {
             // Verify if user is already in group.
             if (globals.getUser_participant().get(userID).contains(groupID))
                 return 4;
-                
+
             // Current user is the owner of groupID.
             // Add new member.
             globals.getUser_participant().get(userID).add(groupID);
+            
+            return 0;
+        }
+
+        /**
+         * Removes a user from a group.
+         * @param userID user to be removed.
+         * @param groupID
+         * @param clientID current user.
+         * @return 0 if user removed from group.
+         *         1 if group does not exist.
+         *         2 if current user is not the owner of the group.
+         *         3 user does not exist.
+         *         4 user already not in group.
+         */
+        private int removeu(String userID, String groupID, String clientID) {
+            Set<String> users = globals.getUsers().keySet();
+            // Verify if user exists.
+            if (!users.contains(userID))
+                return 3;
+            // Verify if group exists.
+            boolean exists = false;
+            for (String user : users) {
+                List<String> groups = globals.getUser_owner().get(user);
+                if (groups.contains(groupID))
+                    exists = true;
+            }
+            if (!exists) {
+                // group does not exist.
+                return 1;
+            }
+
+            // Verify if current user has a group with this name.
+            List<String> groups = globals.getUser_owner().get(clientID);
+            if (!groups.contains(groupID)) {
+                // Current user is not the owner of group.
+                return 2;
+            }
+
+            // Verify if user is not already in group.
+            if (!globals.getUser_participant().get(userID).contains(groupID))
+                return 4;
+
+            // Current user is the owner of groupID.
+            // Add new member.
+            globals.getUser_participant().get(userID).remove(groupID);
             
             return 0;
         }
