@@ -211,22 +211,20 @@ public class ClientStub {
      * Adds user_id to group_id.
      * @param user_id
      * @param group_id
-     * @param group_owner_id has to be owner of group_id
-     * @return 0 if successfully added. -1 if not.
+     * @return 0 if successfully added.
+     *         1 if group does not exist.
+     *         2 if current user is not owner of the group. 
+     *         -1 if error on operation.
      */
-    public int addu(String user_id, String group_id, String group_owner_id) {
-        int result = -1;
-
+    public int addu(String user_id, String group_id) {
         try {
             com.send("a");
-            com.send(user_id + ":" + group_id + ":" + group_owner_id);
-            result = (int) com.receive();
+            com.send(user_id);
+            com.send(group_id);
+            return (int) com.receive();
         } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println("Error while trying to conclude addu operation");
+            return -1;
         }
-
-        return result;
     }
 
     /**
