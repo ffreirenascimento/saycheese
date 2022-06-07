@@ -306,6 +306,50 @@ public class SayCheese {
                             break;
                     }
                     break;
+                case "g":
+                case "ginfo":
+                    // Verify input.
+                    if (input.length < 1 || input.length > 2) {
+                        show_sep();
+                        System.out.println("proper calling of operation:\n"+
+                                            "g or ginfo\n"+
+                                            "g <group id> or ginfo <group id>");
+                        show_sep();
+                        break;
+                    }
+                    show_sep();
+                    if (input.length == 1) {
+                        // group id not specified
+                        // List of groups the current user owns / List of groups the current user is part of.  
+                        List<List<String>> ownerMember = cs.ginfo();
+                        // group id not specified.
+                        System.out.println("Groups you own:");
+                        if (ownerMember.get(0).size() == 0) {
+                            System.out.println("none");
+                        } else {
+                            ownerMember.get(0).forEach(System.out::println);
+                        }
+                        System.out.println("Groups you are a part of:");
+                        if (ownerMember.get(1).size() == 0) {
+                            System.out.println("none");
+                        } else {
+                            ownerMember.get(1).forEach(System.out::println);
+                        }
+                    } else {
+                        // group id specified.
+                        List<String> groupInfo = cs.ginfo(input[1]);
+                        if (groupInfo.isEmpty()) {
+                            System.out.println("Could not retrieve info\n"+
+                                               "You are ether not participating in the group or it does not exist");
+                        } else {
+                            System.out.println("group owner:\n" + groupInfo.get(0) + "\nMembers:");
+                            groupInfo.remove(0);
+                            groupInfo.forEach(System.out::println);
+                        }
+                    }
+                    
+
+                    break;
                 case "s":
                 case "stop":
                     show_sep();  
