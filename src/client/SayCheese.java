@@ -233,7 +233,6 @@ public class SayCheese {
                         break;
                     }
                     
-                    show_sep();
                     switch (cs.addu(input[1], input[2])) {
                         case 0:
                             show_sep();  
@@ -258,7 +257,6 @@ public class SayCheese {
                         default:
                             break;
                     }
-                    show_sep();
                     break;
                 default:
                     show_sep();
