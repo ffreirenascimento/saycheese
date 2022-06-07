@@ -216,13 +216,6 @@ public class SayCheese {
                     }
                     show_sep();
                     break;
-                case "s":
-                case "stop":
-                    show_sep();  
-                    System.out.println("Stopping the application");
-                    show_sep();
-                    stop = true;
-                    break;
                 case "a":
                 case "addu":
                     if (input.length != 3) {
@@ -268,51 +261,58 @@ public class SayCheese {
                             break;
                     }
                     break;
-                    case "r":
-                    case "removeu":
-                        if (input.length != 3) {
-                            show_sep();
-                            System.out.println("Operation should be written as:" + 
-                                               "\nremoveu <user id> <group id>");
+                case "r":
+                case "removeu":
+                    if (input.length != 3) {
+                        show_sep();
+                        System.out.println("Operation should be written as:" + 
+                                            "\nremoveu <user id> <group id>");
+                        show_sep();
+                        break;
+                    }
+                    
+                    switch (cs.removeu(input[1], input[2])) {
+                        case 0:
+                            show_sep();  
+                            System.out.println("User removed from group");
                             show_sep();
                             break;
-                        }
-                        
-                        switch (cs.removeu(input[1], input[2])) {
-                            case 0:
-                                show_sep();  
-                                System.out.println("User removed from group");
-                                show_sep();
-                                break;
-                            case 1:
-                                show_sep();  
-                                System.out.println("Group does not exist");
-                                show_sep();
-                                break;
-                            case 2:
-                                show_sep();  
-                                System.out.println("You are not the group owner\nYou must be the owner of the group to add a member");
-                                show_sep();
-                                break;
-                            case 3:
-                                show_sep();  
-                                System.out.println("User does not exist");
-                                show_sep();
-                                break;
-                            case 4:
-                                show_sep();  
-                                System.out.println("User already is not in group");
-                                show_sep();
-                                break;
-                            case -1:
-                                show_sep();  
-                                System.out.println("Error on operation");
-                                show_sep();
-                                break;
-                            default:
-                                break;
-                        }
-                        break;
+                        case 1:
+                            show_sep();  
+                            System.out.println("Group does not exist");
+                            show_sep();
+                            break;
+                        case 2:
+                            show_sep();  
+                            System.out.println("You are not the group owner\nYou must be the owner of the group to add a member");
+                            show_sep();
+                            break;
+                        case 3:
+                            show_sep();  
+                            System.out.println("User does not exist");
+                            show_sep();
+                            break;
+                        case 4:
+                            show_sep();  
+                            System.out.println("User already is not in group");
+                            show_sep();
+                            break;
+                        case -1:
+                            show_sep();  
+                            System.out.println("Error on operation");
+                            show_sep();
+                            break;
+                        default:
+                            break;
+                    }
+                    break;
+                case "s":
+                case "stop":
+                    show_sep();  
+                    System.out.println("Stopping the application");
+                    show_sep();
+                    stop = true;
+                    break;
                 default:
                     show_sep();
                     System.out.println("Invalid input");
