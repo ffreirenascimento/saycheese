@@ -214,6 +214,8 @@ public class ClientStub {
      * @return 0 if successfully added.
      *         1 if group does not exist.
      *         2 if current user is not owner of the group. 
+     *         3 user does not exist.
+     *         4 user is part of group already.
      *         -1 if error on operation.
      */
     public int addu(String user_id, String group_id) {
@@ -232,21 +234,22 @@ public class ClientStub {
      * @param user_id
      * @param group_id
      * @param group_owner_id has to be grouper id.
-     * @return 0 if successfully removed. -1 if not. 
+     * @return 0 if successfully removed. 
+     *         1 if group does not exist.
+     *         2 if current user is not owner of the group. 
+     *         3 user does not exist.
+     *         4 user is not part of group already.
+     *         -1 if error on operation.
      */
-    public int removeu(String user_id, String group_id, String group_owner_id) {
-        int result = -1;
-
+    public int removeu(String user_id, String group_id) {
         try {
             com.send("r");
-            com.send(user_id + ":" + group_id + ":" + group_owner_id);
-            result = (int) com.receive();
+            com.send(user_id);
+            com.send(group_id);
+            return (int) com.receive();
         } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println("Error while trying to conclude removeu operation");
+            return -1;
         }
-
-        return result;
     }
 
     public int msg(String group_id, String user_id, String message) {
