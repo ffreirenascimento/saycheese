@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Scanner;
 
 import org.javatuples.Pair;
+import org.javatuples.Triplet;
 import org.javatuples.Unit;
 
 public class ClientStub {
@@ -255,20 +256,22 @@ public class ClientStub {
         }
     }
 
-    public int msg(String group_id, String user_id, String message) {
-        int result = -1;
-
+    /**
+     * Request sever to register a message to a group.
+     * @param groupId
+     * @param message
+     * @return 0 if successful,
+     *         1 if user not in group,
+     *         2 if group does not exist,
+     *         -1 if error on operation.
+     */
+    public int msg(String groupId, String message) {
         try {
-            com.send(new Unit<String>("m"));
-            com.send(group_id + ":" + user_id);
-            com.send(message);
-            result = (int) com.receive();
+            com.send(new Triplet<String, String, String>("m", groupId, message));
+            return (int) com.receive();
         } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println("Error while trying to conclude message operation");
+            return -1;
         }
-
-        return result;
     }
 
     /**

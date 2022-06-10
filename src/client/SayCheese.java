@@ -313,7 +313,7 @@ public class SayCheese {
                     // Verify input.
                     if (input.length < 1 || input.length > 2) {
                         show_sep();
-                        System.out.println("proper calling of operation:\n"+
+                        System.out.println("Proper calling of operation:\n"+
                                             "g or ginfo\n"+
                                             "g <group id> or ginfo <group id>");
                         show_sep();
@@ -349,6 +349,33 @@ public class SayCheese {
                         }
                     }
                     show_sep();                    
+                    break;
+                case "m":
+                case "msg":
+                    show_sep();
+                    // verify input:
+                    if (input.length != 3) 
+                        System.out.println("Proper way to call the message method:\n"+
+                                           "m or msg <groupID> <msg>");
+                    else {
+                        int response = cs.msg(input[1], input[2]);
+                        switch (response) {
+                            case 0:
+                                System.out.println("Message sent");
+                                break;
+                            case 1: 
+                                System.out.println("Error on sending message\n" +
+                                                   "You are not part of this group");
+                            case 2:
+                                System.out.println("Error on sending message\n" +
+                                                   "This group does not exist");
+                            case -1:
+                                System.out.println("Error on operation");
+                            default:
+                                break;
+                        }
+                    }
+                    show_sep();
                     break;
                 case "s":
                 case "stop":
