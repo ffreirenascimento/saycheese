@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.List;
 
+import org.javatuples.Pair;
+
 public class SayCheese {
 
     private static void show_sep() {
@@ -321,30 +323,29 @@ public class SayCheese {
                     if (input.length == 1) {
                         // group id not specified
                         // List of groups the current user owns / List of groups the current user is part of.  
-                        List<List<String>> ownerMember = cs.ginfo();
+                        Pair<List<String>, List<String>> ownerMember = cs.ginfo();
                         // group id not specified.
                         System.out.println("Groups you own:");
-                        if (ownerMember.get(0).size() == 0) {
+                        if (ownerMember.getValue0().size() == 0) {
                             System.out.println("none");
                         } else {
-                            ownerMember.get(0).forEach(System.out::println);
+                            ownerMember.getValue0().forEach(System.out::println);
                         }
                         System.out.println("Groups you are a part of:");
-                        if (ownerMember.get(1).size() == 0) {
+                        if (ownerMember.getValue1().size() == 0) {
                             System.out.println("none");
                         } else {
-                            ownerMember.get(1).forEach(System.out::println);
+                            ownerMember.getValue1().forEach(System.out::println);
                         }
                     } else {
                         // group id specified.
-                        List<String> groupInfo = cs.ginfo(input[1]);
-                        if (groupInfo.isEmpty()) {
+                        Pair<String, List<String>> groupInfo = cs.ginfo(input[1]);
+                        if (groupInfo == null) {
                             System.out.println("Could not retrieve info\n"+
                                                "You are ether not participating in the group or it does not exist");
                         } else {
-                            System.out.println("group owner:\n" + groupInfo.get(0) + "\nMembers:");
-                            groupInfo.remove(0);
-                            groupInfo.forEach(System.out::println);
+                            System.out.println("group owner:\n" + groupInfo.getValue0() + "\nMembers:");
+                            groupInfo.getValue1().forEach(System.out::println);
                         }
                     }
                     

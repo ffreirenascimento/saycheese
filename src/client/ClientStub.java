@@ -7,6 +7,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
+import org.javatuples.Pair;
+import org.javatuples.Unit;
+
 public class ClientStub {
 
     private Socket client_socket;
@@ -340,24 +343,13 @@ public class ClientStub {
      * @return Names of the groups or empty if 
      * user_id is neither a member or owner.
      */
-    public List<List<String>> ginfo() {
-        String groups;
-        String[] result = null;
+    public Pair<List<String>,List<String>> ginfo() {
         try {
-            com.send("g");
-            com.send(user_id);
-            // warn the server that there is only one argument.
-            com.send("/");
-            groups = (String) com.receive();
-            if (groups.equals(""))
-                return new String[0];
-            result = groups.split(",");
+            com.send(new Unit<String>("g"));
+            return (Pair<List<String>,List<String>>) com.receive();
         } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println("Error while trying to conclude ginfo operation");
+            return null;
         }
-        
-        return result;
     }
 
 
@@ -369,22 +361,13 @@ public class ClientStub {
      * @return Owner and members of group_id. 
      * null if user_id is not part of the group.
     */
-    public List<String> ginfo(String group_id) {
-        String info;
-        String[] result = null;
+    public Pair<String, List<String>> ginfo(String group_id) {
         try {
-            com.send("g");
-            com.send(user_id);
-            com.send(group_id);
-            info = (String) com.receive();
-            if (info.equals(""))
-               return new String[0]; 
-            result = info.split(",");
+            com.send(new Pair<String, String>("g",group_id));
+            return (Pair<String, List<String>>) com.receive();
         } catch (IOException e) {
-            e.printStackTrace();
-            System.err.println("Error while trying to conclude ginfo operation");
+            return null;
         }
-        return result;
     } 
 
     /**
