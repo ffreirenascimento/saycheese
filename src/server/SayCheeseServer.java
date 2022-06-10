@@ -146,7 +146,7 @@ public class SayCheeseServer {
     /**
      * Verifies if credentials passed are valid.
      * 
-     * @param client_id
+     * @param clientId
      * @param password
      * @return
      *         -1 authentication error;
@@ -154,7 +154,7 @@ public class SayCheeseServer {
      *         1 user does not exist on system yet,
      *         The new user was created and authenticated.
      */
-    public int isAuthenticated(String client_id, String password) {
+    public int isAuthenticated(String clientId, String password) {
         if (globals == null) {
             globals = new ServerGlobals();
         }
@@ -166,10 +166,10 @@ public class SayCheeseServer {
         }
        
         // Check if user exists
-        if (!users.containsKey(client_id))
+        if (!users.containsKey(clientId))
             return 1;
         // Check if password is correct
-        if (!users.get(client_id).equals(password))
+        if (!users.get(clientId).equals(password))
             return -1;
         return 0;
     }
@@ -178,31 +178,24 @@ public class SayCheeseServer {
      * Stores the credentials and creates all the necessary files for
      * the new user.
      * 
-     * @param client_id
-     * @param user_name
+     * @param clientId
+     * @param userName
      * @param password
      */
-    public void addUserPswrd(String client_id, String user_name, String password) {
+    public void addUserPswrd(String clientId, String userName, String password) {
         Map<String,String> users = globals.getUsers();
         Map<String, List<String>> user_photos = globals.getUser_photos();
         Map<String, List<String>> user_followers = globals.getUser_followers();
         Map<String, List<String>> user_follows = globals.getUser_follows();
         Map<String, List<String>> user_owner = globals.getUser_owner();
         Map<String, List<String>> user_participant = globals.getUser_participant();
-        users.put(client_id, password);
-        user_photos.put(client_id, new ArrayList<String>());
-        user_followers.put(client_id, new ArrayList<String>());
-        user_follows.put(client_id, new ArrayList<String>());
-        user_owner.put(client_id, new ArrayList<String>());
-        user_participant.put(client_id, new ArrayList<String>());
-        // TODO: Check if it's redundant.
-        globals.setUsers(users);
-        globals.setUser_photos(user_photos);
-        globals.setUser_followers(user_followers);
-        globals.setUser_follows(user_follows);
-        globals.setUser_owner(user_owner);
-        globals.setUser_participant(user_participant);
-        // ===
+        users.put(clientId, password);
+        user_photos.put(clientId, new ArrayList<String>());
+        user_followers.put(clientId, new ArrayList<String>());
+        user_follows.put(clientId, new ArrayList<String>());
+        user_owner.put(clientId, new ArrayList<String>());
+        user_participant.put(clientId, new ArrayList<String>());
+        globals.getUserInbox().put(userName, new ArrayList<>());
     }
 
     /**
@@ -231,17 +224,17 @@ public class SayCheeseServer {
         public void run() {
                 Com com = new Com(socket, in, out, globals);
 
-                String client_id = null;
+                String clientId = null;
                 String password = null;
 
                 // Authenticate.
-                client_id = (String) com.receive();
+                clientId = (String) com.receive();
                 password = (String) com.receive();
 
-                if (client_id != null && password != null)
+                if (clientId != null && password != null)
                     System.out.println("------User & Pass received------");
 
-                int is_auth = isAuthenticated(client_id, password);
+                int is_auth = isAuthenticated(clientId, password);
                 switch (is_auth) {
                     case -1:
                         com.send(-1);
@@ -253,8 +246,8 @@ public class SayCheeseServer {
                         break;
                     default:
                         com.send(1);
-                        String user_name = (String) com.receive();
-                        addUserPswrd(client_id, user_name, password);
+                        String userName = (String) com.receive();
+                        addUserPswrd(clientId, userName, password);
                         break;
                 }
                 System.out.println("----------------------------------------------");
@@ -293,7 +286,7 @@ public class SayCheeseServer {
                             com.send(viewFollowers(aux));
                             break;
                         case "p":
-                            com.send(post(client_id, com));
+                            com.send(post(clientId, com));
                             break;
                         case "w":
                             // current user
@@ -328,12 +321,12 @@ public class SayCheeseServer {
                         case "l":
                             // Receive photo_id.
                             aux = (String) com.receive();
-                            com.send(like(aux, client_id));
+                            com.send(like(aux, clientId));
                             break;
                         case "n":
                             // receive <group_id>
                             aux = (String) com.receive();
-                            com.send(newGroup(aux, client_id));
+                            com.send(newGroup(aux, clientId));
                             break;
                         case "a":
                             // receive
@@ -341,7 +334,7 @@ public class SayCheeseServer {
                             receivedContent.add((String) com.receive());
                             // <group_id>
                             receivedContent.add((String) com.receive());
-                            com.send(addu(receivedContent.get(0), receivedContent.get(1), client_id));
+                            com.send(addu(receivedContent.get(0), receivedContent.get(1), clientId));
                             receivedContent.clear();
                             break;
                         case "r":
@@ -350,18 +343,21 @@ public class SayCheeseServer {
                             receivedContent.add((String) com.receive());
                             // <group_id>
                             receivedContent.add((String) com.receive());
-                            com.send(removeu(receivedContent.get(0), receivedContent.get(1), client_id));
+                            com.send(removeu(receivedContent.get(0), receivedContent.get(1), clientId));
                             receivedContent.clear();
                             break;
                         case "g":
                             // Current user.
-                            com.send(request.getSize() == 1 ? ginfo(client_id) : ginfo(client_id, (String) request.getValue(1)));
+                            com.send(request.getSize() == 1 ? 
+                                     ginfo(clientId) : 
+                                     ginfo(clientId, 
+                                           (String) request.getValue(1)));
                             break;
                         case "m":
                             // <group_id>:<current user>:<message>
-                            aux = (String) com.receive();
-                            content = aux.split(":");
-                            com.send(msg(content[0], content[1], content[2]));
+                            com.send(msg((String) request.getValue(1), 
+                                         (String) request.getValue(2),
+                                         clientId));
                             break;
                         case "ch":
                             // <group_id>:<current user>
@@ -425,8 +421,35 @@ public class SayCheeseServer {
             return null;
         }
 
-        private Object msg(String string, String string2, String string3) {
-            return null;
+        /**
+         * Registers a message to a group.
+         * @param groupID
+         * @param content
+         * @param sender
+         * @return 0 if successful,
+         *         1 if user not in group or group does not exist,
+         *         -1 if error on operation.
+         */
+        private int msg(String groupID, String content, String sender) {
+            // Verify if user is in group or group exists:
+            if (!globals.getUser_participant().get(sender).contains(groupID))
+                return 1;
+            
+            // Get users from group
+            List<String> groupMembers = new ArrayList<>();
+            for (String user : globals.getUsers().keySet()) {
+                if (globals.getUser_participant().get(user).contains(groupID))
+                    groupMembers.add(user);
+            }
+
+            // Create new message
+            Message newMessage = new Message(content, sender, groupMembers);
+            // Add to current users' inbox
+            groupMembers.forEach((String member) -> {
+                globals.getUserInbox().get(member).add(newMessage);
+            });
+
+            return 0;
         }
 
         /**
@@ -604,6 +627,9 @@ public class SayCheeseServer {
             // Add group
             globals.getUser_owner().get(owner).add(groupId);
             globals.getUser_participant().get(owner).add(groupId);
+
+            // Create group's history
+            globals.getGroupHistory().put(groupId, new ArrayList<>());
             
             return 0; 
         }
@@ -692,16 +718,16 @@ public class SayCheeseServer {
 
 
         /**
-         * Gets the list of followers of client_id.
-         * @param client_id
+         * Gets the list of followers of clientId.
+         * @param clientId
          * @return List of followers. null if error.
          */
-        private List<String> viewFollowers(String client_id) {
+        private List<String> viewFollowers(String clientId) {
             // Check if user exists.
-            if (!globals.getUsers().containsKey(client_id))
+            if (!globals.getUsers().containsKey(clientId))
                 return new ArrayList<>();
             // Get followers.
-            return globals.getUser_followers().get(client_id);
+            return globals.getUser_followers().get(clientId);
         }
 
         /**
