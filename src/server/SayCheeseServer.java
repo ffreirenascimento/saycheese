@@ -182,7 +182,7 @@ public class SayCheeseServer {
      * @param userName
      * @param password
      */
-    public void addUserPswrd(String clientId, String userName, String password) {
+    public void addUserPswrd(String clientId, String password) {
         Map<String,String> users = globals.getUsers();
         Map<String, List<String>> user_photos = globals.getUser_photos();
         Map<String, List<String>> user_followers = globals.getUser_followers();
@@ -195,7 +195,7 @@ public class SayCheeseServer {
         user_follows.put(clientId, new ArrayList<String>());
         user_owner.put(clientId, new ArrayList<String>());
         user_participant.put(clientId, new ArrayList<String>());
-        globals.getUserInbox().put(userName, new ArrayList<>());
+        globals.getUserInbox().put(clientId, new ArrayList<>());
     }
 
     /**
@@ -246,8 +246,7 @@ public class SayCheeseServer {
                         break;
                     default:
                         com.send(1);
-                        String userName = (String) com.receive();
-                        addUserPswrd(clientId, userName, password);
+                        addUserPswrd(clientId, password);
                         break;
                 }
                 System.out.println("----------------------------------------------");
