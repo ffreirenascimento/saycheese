@@ -18,6 +18,10 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.IntStream;
+
+import org.javatuples.Pair;
+import org.javatuples.Tuple;
+
 import com.google.gson.*;
 
 public class SayCheeseServer {
@@ -259,7 +263,7 @@ public class SayCheeseServer {
                 boolean stop = false;
                 while (!stop) {
                     // Receive operation.
-                    String operation = (String) com.receive();
+                    Tuple request = (Tuple) com.receive();
 
                     String aux = null;
                     String[] content = null;
@@ -270,7 +274,7 @@ public class SayCheeseServer {
                     List<String> receivedContent = new ArrayList<>();
 
                     // Execute:
-                    switch (operation) {
+                    switch ((String) request.getValue(0)) {
                         case "f":
                             // <user_id of who user wants to follow>:<user user_id>
                             aux = (String) com.receive();
@@ -351,20 +355,7 @@ public class SayCheeseServer {
                             break;
                         case "g":
                             // Current user.
-                            aux = (String) com.receive();
-                            group_id = (String) com.receive();
-                            if (group_id.equals("/")) {
-                                groups = ginfo(aux);
-                            } else {
-                                groups = ginfo(aux, group_id);
-                            }
-
-                            // Send answer.
-                            if (groups == null) {
-                                com.send("");
-                            } else {
-                                com.send(groups);
-                            }
+                            com.send(request.getSize() == 1 ? ginfo(client_id) : ginfo(client_id, (String) request.getValue(1)));
                             break;
                         case "m":
                             // <group_id>:<current user>:<message>
@@ -438,13 +429,62 @@ public class SayCheeseServer {
             return null;
         }
 
-        private String ginfo(String aux, String group_id) {
-            return null;
+        /**
+        * Retrieves the names of the groups that currentUser
+        * is owner or member of.
+        * @param currentUser 
+        * @return Pair containing the names of the groups 
+        * the currentUser owns in the first position.
+        * Names of the groups it takes part in on the 
+        * second position of the Pair.
+        */
+        private Pair<List<String>, List<String>> ginfo(String currentUser) {
+            // Retrieve groups the currentUser owns
+            List<String> owns = globals.getUser_owner().get(currentUser);
+            // Retrieve groups the currentUser participates in
+            List<String> participates = globals.getUser_participant().get(currentUser);
+            
+            return new Pair<List<String>,List<String>>(owns, participates);
         }
 
-        private String ginfo(String aux) {
-            return null;
+
+        /**
+         * Retrieves the name of the group's owner
+         * as well the all the participants in groupId
+         * @param currentUser
+         * @param groupId
+         * @return Pair with requested information.
+         * null if currentUser is not the owner or
+         * does not participates in the group.
+         */
+        private Pair<String, List<String>> ginfo(String currentUser, String groupId) {
+            Set<String> users = globals.getUsers().keySet();
+
+            // Check if currentUser is allowed to retrieve info about groupId.
+            String owner = globals.getUser_owner().get(currentUser).contains(groupId) 
+                           ? currentUser : null;
+            if (owner == null &&
+                !globals.getUser_participant().get(currentUser).contains(groupId))
+                return null;
+            
+            // Retrieve owner of the group.
+            if (owner == null) {
+                for (String user : users) {
+                    if (globals.getUser_owner().get(user).contains(groupId))
+                        owner = user;
+                }
+            }
+
+            // Retrieve participants of the group.
+            List<String> participants = new ArrayList<>();
+            for (String user : users) {
+                if (globals.getUser_participant().get(user).contains(groupId))
+                    participants.add(user);
+            }
+
+            return new Pair<String, List<String>>(owner, participants);
         }
+
 
 
         /**
