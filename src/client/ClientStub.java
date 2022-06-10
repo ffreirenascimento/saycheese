@@ -99,26 +99,6 @@ public class ClientStub {
             // Successful login.
                 System.out.println("...Login successful...");
                 break;
-            case 1:
-            // Give server the nickname.
-                System.out.println("...To finish signing up, please provide a nickname:");
-                System.out.print(">>>");
-                String nickname = null;
-                try {
-                    // BUG: if scanner is closed, socket is closed and EOF is thrown
-                    // on server side.
-                    Scanner sc = new Scanner(System.in);
-                    nickname = sc.nextLine();
-                    while (nickname.contains(":") || nickname.contains(" ")) {
-                        System.out.println("Nickname cannot contain ':' or ' '\nPlease provide a new nickname:");
-                        nickname = sc.nextLine(); 
-                    } 
-                    // Send to server.
-                    com.send(nickname);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                break;
             case -1:
             // Invalid password.
                 System.out.println("...Invalid password...\n...closing application...");
