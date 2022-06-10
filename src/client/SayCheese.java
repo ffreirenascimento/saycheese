@@ -348,8 +348,7 @@ public class SayCheese {
                             groupInfo.getValue1().forEach(System.out::println);
                         }
                     }
-                    
-
+                    show_sep();                    
                     break;
                 case "s":
                 case "stop":

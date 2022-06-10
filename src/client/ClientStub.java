@@ -137,7 +137,7 @@ public class ClientStub {
         int result = -1;
         try {
             // Send operation type.
-            com.send("f");
+            com.send(new Unit<String>("f"));
             // Send follow info
             com.send(user_id + ":" + sender_id);
             // Receive answer from server
@@ -163,7 +163,7 @@ public class ClientStub {
         int result = -1;
 
         try {
-            com.send("u");
+            com.send(new Unit<String>("u"));
             com.send(user_id + ":" + sender_id);
             result = (int) com.receive();
         } catch (IOException e) {
@@ -183,7 +183,7 @@ public class ClientStub {
         List<String> followers = null;
 
         try {
-            com.send("v");
+            com.send(new Unit<String>("v"));
             com.send(sender_id);
             followers = (List<String>) com.receive();
         } catch (IOException e) {
@@ -201,7 +201,7 @@ public class ClientStub {
      */
     public int newGroup(String group_id) {
         try {
-            com.send("n");
+            com.send(new Unit<String>("n"));
             com.send(group_id);
             return (int) com.receive();
         } catch (IOException e) {
@@ -223,7 +223,7 @@ public class ClientStub {
      */
     public int addu(String user_id, String group_id) {
         try {
-            com.send("a");
+            com.send(new Unit<String>("a"));
             com.send(user_id);
             com.send(group_id);
             return (int) com.receive();
@@ -246,7 +246,7 @@ public class ClientStub {
      */
     public int removeu(String user_id, String group_id) {
         try {
-            com.send("r");
+            com.send(new Unit<String>("r"));
             com.send(user_id);
             com.send(group_id);
             return (int) com.receive();
@@ -259,7 +259,7 @@ public class ClientStub {
         int result = -1;
 
         try {
-            com.send("m");
+            com.send(new Unit<String>("m"));
             com.send(group_id + ":" + user_id);
             com.send(message);
             result = (int) com.receive();
@@ -282,7 +282,7 @@ public class ClientStub {
         int result = -1;
 
         try {
-            com.send("ch");
+            com.send(new Unit<String>("ch"));
             com.send(group_id + ":" + user_id);
             result = (int) com.receive();
         } catch (IOException e) {
@@ -304,7 +304,7 @@ public class ClientStub {
         String[] messages = null;
 
         try {
-            com.send("c");
+            com.send(new Unit<String>("c"));
             com.send(group_id + ":" + user_id);
             messages = (String[]) com.receive();
         } catch (IOException e) {
@@ -326,7 +326,7 @@ public class ClientStub {
     public String[] history(String group_id, String user_id) {
         String[] messages = null;
         try {
-            com.send("h");
+            com.send(new Unit<String>("h"));
             com.send(group_id + ":" + user_id);
             messages = (String[]) com.receive();
         } catch (IOException e) {
@@ -338,14 +338,14 @@ public class ClientStub {
 
     /**
      * Retrieves the names of the groups that user_id
-     * is owner of member of.
-     * @param user_id 
+     * is owner or member of.
      * @return Names of the groups or empty if 
      * user_id is neither a member or owner.
      */
     public Pair<List<String>,List<String>> ginfo() {
+        Unit<String> request = new Unit<String>("g");
         try {
-            com.send(new Unit<String>("g"));
+            com.send(request);
             return (Pair<List<String>,List<String>>) com.receive();
         } catch (IOException e) {
             return null;
@@ -362,8 +362,9 @@ public class ClientStub {
      * null if user_id is not part of the group.
     */
     public Pair<String, List<String>> ginfo(String group_id) {
+        Pair<String, String> request = new Pair<String, String>("g",group_id);
         try {
-            com.send(new Pair<String, String>("g",group_id));
+            com.send(request);
             return (Pair<String, List<String>>) com.receive();
         } catch (IOException e) {
             return null;
@@ -381,7 +382,7 @@ public class ClientStub {
         boolean result = false;
         System.out.println(file_path);
         try {
-            this.com.send("p");
+            this.com.send(new Unit<String>("p"));
             this.com.sendFile("Photos/" + file_path);
             result = (boolean) this.com.receive();
         } catch (IOException e) {
@@ -403,7 +404,7 @@ public class ClientStub {
         List<String> result = new ArrayList<>();
         int size = 0;
         try {
-            com.send("w");
+            com.send(new Unit<String>("w"));
             com.send(user_id);
             com.send(n);
 
@@ -444,7 +445,7 @@ public class ClientStub {
     public int like(String photo_id) {
         int result;
         try {
-            com.send("l");
+            com.send(new Unit<String>("l"));
             com.send(photo_id);
         } catch (IOException e) {
             e.printStackTrace();
@@ -461,7 +462,7 @@ public class ClientStub {
 	public void stopClient() {
 
 		try {
-			com.send("s");
+			com.send(new Unit<String>("s"));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
