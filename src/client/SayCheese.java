@@ -365,12 +365,12 @@ public class SayCheese {
                                 break;
                             case 1: 
                                 System.out.println("Error on sending message\n" +
-                                                   "You are not part of this group");
-                            case 2:
-                                System.out.println("Error on sending message\n" +
-                                                   "This group does not exist");
+                                                   "You are not part of this group\n" +
+                                                   "Or this group does not exist");
+                                break;
                             case -1:
                                 System.out.println("Error on operation");
+                                break;
                             default:
                                 break;
                         }

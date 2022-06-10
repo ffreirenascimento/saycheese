@@ -261,8 +261,7 @@ public class ClientStub {
      * @param groupId
      * @param message
      * @return 0 if successful,
-     *         1 if user not in group,
-     *         2 if group does not exist,
+     *         1 if user not in group or group does not exist,
      *         -1 if error on operation.
      */
     public int msg(String groupId, String message) {
